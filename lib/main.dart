@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import 'advanced_ecommerce/provider/filter_provider.dart';
 import 'advanced_ecommerce/product_list_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => FilterAndSortProducts()),
+      ],
+      child:const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -17,7 +23,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       // home: const DebuggingTask(),
-      home: const ProductListScreen(),
+      home:  const ProductListScreen(),
     );
   }
 }
