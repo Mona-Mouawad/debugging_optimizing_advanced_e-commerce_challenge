@@ -1,12 +1,10 @@
-import 'dart:async';
-import 'dart:developer';
+
 
 import 'package:debugging_optimizing_ecommerce_challenge/advanced_ecommerce/product_widgets_factory.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
   import 'provider/filter_provider.dart';
-import 'entity/product_entity.dart';
 import 'filter_widget.dart';
 
 class ProductListScreen extends StatefulWidget {
