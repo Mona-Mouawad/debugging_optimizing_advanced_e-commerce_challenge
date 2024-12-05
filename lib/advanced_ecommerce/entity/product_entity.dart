@@ -13,5 +13,14 @@ class Product {
     required this.rating,
     required this.isAvailable,
   });
-
+ Map<String, dynamic> toMap() {
+   return {
+     'id': id,
+     'name': name,
+     'category': category,
+     'price': price,
+     'rating': rating,
+     'isAvailable': isAvailable,
+   };
+ }
 }

@@ -1,13 +1,11 @@
 import 'dart:developer';
-import 'dart:isolate';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../entity/filter_request.dart';
 import '../entity/product_entity.dart';
 
-class FilterAndSortProducts extends ChangeNotifier {
+class FilterAndSortProductsProvider extends ChangeNotifier {
   List<Product> products = [];
   List<Product> filteredProducts = [];
   final ScrollController scrollController = ScrollController();
@@ -22,8 +20,10 @@ class FilterAndSortProducts extends ChangeNotifier {
           generateLazyLoadingList();
         }
       });
+  List<Product> moreProducts = [];
 
   Future<void> generateLazyLoadingList() async {
+    moreProducts = [];
     Future.delayed(const Duration(milliseconds: 500), () async {
       log('Loading page $currentPage');
       log('Loading  $isLoading');
@@ -33,7 +33,7 @@ class FilterAndSortProducts extends ChangeNotifier {
       isLoading = true;
       currentPage++;
       notifyListeners();
-      products.addAll(List.generate(
+      moreProducts = (List.generate(
           pageSize,
           (index) => Product(
                 id: 'id_${currentPage * pageSize + index}',
@@ -48,43 +48,48 @@ class FilterAndSortProducts extends ChangeNotifier {
                 isAvailable: (currentPage * pageSize + index) % 2 == 0,
               )));
       isLoading = false;
+      log("moreProducts length is ${moreProducts.length}");
+      products.addAll(moreProducts);
+      await filterAndSortProduct();
+      notifyListeners();
     });
-
-    await filterAndSortProducts();
-    notifyListeners();
   }
 
-  Future<void> filterAndSortProducts() async {
+  Future<void> filterAndSortProduct() async {
+    log("moreProducts length is ${moreProducts.length}");
+    log("filterRequest  is $filterRequest");
     if (filterRequest == null) {
-      filteredProducts = products;
+      filteredProducts=products;
+      log("filteredProducts length is ${filteredProducts.length}");
+
+      notifyListeners();
     } else {
-      final receivePort = ReceivePort();
+      await compute(_filterAndSort, filterRequest!.toMap());
+      // final receivePort = ReceivePort();
 
-      await Isolate.spawn(
-        _filterAndSort,
-        [
-          receivePort.sendPort,
-          products,
-          filterRequest!.category,
-          filterRequest!.minPrice,
-          filterRequest!.maxPrice,
-          filterRequest!.sortCriteria
-        ],
-      );
+      // await Isolate.spawn(
+      //   _filterAndSort,
+      //   [
+      //     receivePort.sendPort,
+      //     products,
+      //     filterRequest!.category,
+      //     filterRequest!.minPrice,
+      //     filterRequest!.maxPrice,
+      //     filterRequest!.sortCriteria
+      //   ],
+      // );
 
-      filteredProducts = await receivePort.first as List<Product>;
+      // filteredProducts = await receivePort.first as List<Product>;
     }
   }
 
-  void _filterAndSort(List<dynamic> args) {
-    SendPort sendPort = args[0];
-    List<Product> products = args[1];
-    String category = args[2];
-    double minPrice = args[3];
-    double maxPrice = args[4];
-    String sortCriteria = args[5];
+  void _filterAndSort(Map<String, dynamic> params ) {
+    final category = params['category'];
+    final minPrice = params['minPrice'];
+    final maxPrice = params['maxPrice'];
+    final sortCriteria = params['sortCriteria'];
 
-    List<Product> filtered = products.where((product) {
+    List<Product> filtered = params['productInFilter'].productInFilter.where((product) {
       return product.category == category &&
           product.price >= minPrice &&
           product.price <= maxPrice;
@@ -95,7 +100,6 @@ class FilterAndSortProducts extends ChangeNotifier {
     } else if (sortCriteria == 'Rating') {
       filtered.sort((a, b) => b.rating.compareTo(a.rating));
     }
-
-    sendPort.send(filtered);
+    filteredProducts.addAll(filtered);
   }
 }

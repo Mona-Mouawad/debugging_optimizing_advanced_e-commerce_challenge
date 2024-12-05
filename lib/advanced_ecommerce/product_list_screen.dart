@@ -16,13 +16,13 @@ class ProductListScreen extends StatefulWidget {
 
 class _ProductListScreenState extends State<ProductListScreen> {
 
-  late FilterAndSortProducts provider ;
+  late FilterAndSortProductsProvider provider ;
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      provider = Provider.of<FilterAndSortProducts>(context,listen: false)..generateLazyLoadingList()..scrollControllerListener();
+      provider = Provider.of<FilterAndSortProductsProvider>(context,listen: false)..generateLazyLoadingList()..scrollControllerListener();
 
     });
 // Simulating fetching 50,000+ products
@@ -73,7 +73,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
               icon: const Icon(Icons.filter_list))
         ],
       ),
-      body: Consumer<FilterAndSortProducts>(
+      body: Consumer<FilterAndSortProductsProvider>(
         builder: (context, productProvider,_) {
           return ListView.builder(
             itemCount: productProvider.filteredProducts.length,

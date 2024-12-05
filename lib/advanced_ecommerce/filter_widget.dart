@@ -4,7 +4,7 @@ import 'package:debugging_optimizing_ecommerce_challenge/advanced_ecommerce/enti
 import 'package:flutter/material.dart';
 
 class FilterWidget extends StatefulWidget {
-  final FilterAndSortProducts provider;
+  final FilterAndSortProductsProvider provider;
   const FilterWidget({super.key, required this.provider});
   @override
   State<FilterWidget> createState() => _FilterWidgetState();
@@ -141,8 +141,9 @@ _maxPriceController.text ="${ widget.provider.filterRequest?.maxPrice?? 1000}";
                             minPrice: double.parse(_minPriceController.text),
                             maxPrice: double.parse(_maxPriceController.text),
                             isAvailable: isAvailable,
+                            productInFilter:widget.provider.products ,
                             sortCriteria: _sortBy);
-                    widget.provider.filterAndSortProducts();
+                    widget.provider.filterAndSortProduct();
                     Navigator.pop(
                       context,
                     );

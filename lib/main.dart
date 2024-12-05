@@ -7,7 +7,7 @@ import 'advanced_ecommerce/product_list_screen.dart';
 void main() {
   runApp(MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => FilterAndSortProducts()),
+        ChangeNotifierProvider(create: (_) => FilterAndSortProductsProvider()),
       ],
       child:const MyApp()));
 }
