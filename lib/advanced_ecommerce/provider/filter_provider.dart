@@ -1,4 +1,5 @@
 import 'dart:developer';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -10,61 +11,71 @@ class FilterAndSortProductsProvider extends ChangeNotifier {
   List<Product> filteredProducts = [];
   final ScrollController scrollController = ScrollController();
   int currentPage = 0;
-  int pageSize = 80;
+  final int _pageSize =80;
   bool isLoading = false;
   FilterRequest? filterRequest;
 
   scrollControllerListener() => scrollController.addListener(() {
         if (scrollController.position.pixels >=
             scrollController.position.maxScrollExtent * 0.8) {
-          generateLazyLoadingList();
+          generateLazyLoadingList().then((_) async {
+
+
+          });
         }
       });
   List<Product> moreProducts = [];
 
   Future<void> generateLazyLoadingList() async {
-    moreProducts = [];
-    Future.delayed(const Duration(milliseconds: 500), () async {
-      log('Loading page $currentPage');
-      log('Loading  $isLoading');
+    Future.delayed(const Duration(milliseconds: 600), () async {
+      moreProducts = [];
       if (isLoading) return;
-      if (currentPage * pageSize >= 50000) return;
-
+      if (currentPage * _pageSize >= 50000) return;
       isLoading = true;
-      currentPage++;
-      notifyListeners();
       moreProducts = (List.generate(
-          pageSize,
+          _pageSize,
           (index) => Product(
-                id: 'id_${currentPage * pageSize + index}',
-                name: 'Product ${currentPage * pageSize + index}',
-                category: (currentPage * pageSize + index) % 3 == 0
+                id: 'id_${currentPage * _pageSize + index}',
+                name: 'Product ${currentPage * _pageSize + index}',
+                category: (currentPage * _pageSize + index) % 3 == 0
                     ? 'Electronics'
                     : index % 3 == 0
                         ? 'Fashion'
                         : 'Groceries',
-                price: ((currentPage * pageSize + index) % 100) * 10.0,
-                rating: ((currentPage * pageSize + index) % 5) + 1.0,
-                isAvailable: (currentPage * pageSize + index) % 2 == 0,
+                price: ((currentPage * _pageSize + index) % 100) * 10.0,
+                rating: ((currentPage * _pageSize + index) % 5) + 1.0,
+                isAvailable: (currentPage * _pageSize + index) % 2 == 0,
               )));
+      currentPage++;
       isLoading = false;
-      log("moreProducts length is ${moreProducts.length}");
       products.addAll(moreProducts);
-      await filterAndSortProduct();
-      notifyListeners();
+      if(filterRequest!=null) {
+        filterRequest!.productInFilter = moreProducts;
+        notifyListeners();
+      }   await filterAndSortProduct();
     });
   }
 
   Future<void> filterAndSortProduct() async {
     log("moreProducts length is ${moreProducts.length}");
-    log("filterRequest  is $filterRequest");
     if (filterRequest == null) {
-      filteredProducts=products;
+      filteredProducts = products;
       log("filteredProducts length is ${filteredProducts.length}");
-
       notifyListeners();
     } else {
-      await compute(_filterAndSort, filterRequest!.toMap());
+      // try {
+      // filterRequest!.productInFilter = moreProducts;
+      await compute(filterAndSort, filterRequest!.toMap())
+          .then((productsFromFilter) {
+        filteredProducts.addAll(productsFromFilter);
+        log("filteredProducts length is ${filteredProducts.length}");
+        notifyListeners();
+      });
+      // await compute(_filterAndSort, params);
+      // } catch (e) {
+      //   log("Error in filterAndSortProduct $e");
+      // }
+      // _filterAndSort(filterRequest!.toMap());
       // final receivePort = ReceivePort();
 
       // await Isolate.spawn(
@@ -82,24 +93,22 @@ class FilterAndSortProductsProvider extends ChangeNotifier {
       // filteredProducts = await receivePort.first as List<Product>;
     }
   }
+}
 
-  void _filterAndSort(Map<String, dynamic> params ) {
-    final category = params['category'];
-    final minPrice = params['minPrice'];
-    final maxPrice = params['maxPrice'];
-    final sortCriteria = params['sortCriteria'];
+Future<List<Product>> filterAndSort(Map<String, dynamic> params) async {
+  FilterRequest request = FilterRequest.formMap(params);
 
-    List<Product> filtered = params['productInFilter'].productInFilter.where((product) {
-      return product.category == category &&
-          product.price >= minPrice &&
-          product.price <= maxPrice;
-    }).toList();
+  List<Product> filtered = request.productInFilter.where((product) {
+    return product.category == request.category &&
+        product.price >= request.minPrice &&
+        product.price <= request.maxPrice &&
+        product.isAvailable == request.isAvailable;
+  }).toList();
 
-    if (sortCriteria == 'Price') {
-      filtered.sort((a, b) => a.price.compareTo(b.price));
-    } else if (sortCriteria == 'Rating') {
-      filtered.sort((a, b) => b.rating.compareTo(a.rating));
-    }
-    filteredProducts.addAll(filtered);
+  if (request.sortCriteria == 'Price') {
+    filtered.sort((a, b) => a.price.compareTo(b.price));
+  } else if (request.sortCriteria == 'Rating') {
+    filtered.sort((a, b) => b.rating.compareTo(a.rating));
   }
+  return filtered;
 }
